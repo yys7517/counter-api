@@ -44,12 +44,12 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
 
       - name: Deploy to server
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
-          chmod 600 key.pem
-          # username/ 부분을 ${{ secrets.DOCKER_USERNAME }}으로 변경하세요
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@43.201.115.58 "
-          cd ~/app
-          sudo docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest &&
-          sudo docker-compose up -d"
-          rm -f key.pem # 사용 후 키 파일 삭제 (보안)
+        uses: appleboy/ssh-action@master
+        with:
+          host: 43.201.115.58
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/app
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
+            sudo docker-compose up -d
