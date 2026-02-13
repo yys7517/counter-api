@@ -44,23 +44,13 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
 
       # 7. SSH를 통해 EC2 인스턴스에 접속하여 애플리케이션 배포
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: 43.201.115.58
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # 1. 최신 이미지 가져오기
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
-
-            # 2. 기존 컨테이너 중지 및 삭제 (이름에서 :latest 제거)
-            sudo docker stop counter-app || true
-            sudo docker rm counter-app || true
-
-            # 3. 새로운 컨테이너 실행 (--name에 콜론 제외)
-            sudo docker run --name counter-app -d -p 8080:8080 \
-            ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
-
-            # 4. 미사용 이미지 정리 (용량 확보)
-            sudo docker image prune -f
+      - name: Deploy to server
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/docker-compose.yml
+          scp -i key.pem -o StrictHostKeyChecking=no nginx.conf ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/nginx.conf
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "
+          docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
+          docker-compose down
+          docker-compose up -d "
