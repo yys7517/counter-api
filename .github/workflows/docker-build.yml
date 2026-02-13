@@ -51,15 +51,16 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Docker Hub에서 최신 이미지 풀
-            docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
-                      
-            # 기존 컨테이너가 실행 중이면 중지
-            docker stop counter-app:latest || true
-            
-            # 기존 컨테이너 삭제
-            docker rm counter-app:latest || true
-            
-            # 새로운 컨테이너 실행
-            docker run --name counter-app:latest --rm -d -p 8080:8080 \
-              ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
+            # 1. 최신 이미지 가져오기
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
+
+            # 2. 기존 컨테이너 중지 및 삭제 (이름에서 :latest 제거)
+            sudo docker stop counter-app || true
+            sudo docker rm counter-app || true
+
+            # 3. 새로운 컨테이너 실행 (--name에 콜론 제외)
+            sudo docker run --name counter-app -d -p 8080:8080 \
+            ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
+
+            # 4. 미사용 이미지 정리 (용량 확보)
+            sudo docker image prune -f
