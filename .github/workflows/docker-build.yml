@@ -43,13 +43,23 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
 
-      - name: Deploy to server
+      # 7. SSH를 통해 EC2 인스턴스에 접속하여 애플리케이션 배포
+      - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@master
         with:
           host: 43.201.115.58
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/app
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
-            sudo docker-compose up -d
+            # Docker Hub에서 최신 이미지 풀
+            docker pull ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
+                      
+            # 기존 컨테이너가 실행 중이면 중지
+            docker stop counter-app:latest || true
+            
+            # 기존 컨테이너 삭제
+            docker rm counter-app:latest || true
+            
+            # 새로운 컨테이너 실행
+            docker run --name counter-app:latest --rm -d -p 8080:8080 \
+              ${{ secrets.DOCKER_USERNAME }}/counter-app:latest
